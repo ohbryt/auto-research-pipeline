@@ -158,9 +158,84 @@ lf.suggest_pipeline(["SIRT3", "FSHR", "mTOR"], budget_gpu_hours=1.0)
 
 Ref: Watson 2026, bioRxiv 10.64898/2026.03.14.711748
 
-### Phase 4: Review (Cross-Model)
+### AI Scientist Integration (Idea → Review → Paper)
 
-At review checkpoints, send work to GPT/Codex for independent assessment:
+ARP integrates the AI Scientist pipeline (SakanaAI, Nature 2026) for end-to-end research automation: structured idea generation, automated peer review, and scientific manuscript generation.
+
+Ref: Sakana AI, "Towards end-to-end automation of AI research", Nature 651, 914–919 (2026). doi:10.1038/s41586-026-10265-5
+
+**Module 1: Idea Generation (Phase 1 enhancement)**
+
+Generate scored research ideas with reflection loops:
+
+```python
+from data.ai_scientist import IdeaGenerator
+
+gen = IdeaGenerator()
+ideas = gen.generate(
+    task="Design peptide inhibitors for SIRT3",
+    context="Anti-aging mitochondrial target",
+    existing_ideas=["SIRT3-CPP1"],
+    num_ideas=5,
+    num_reflections=3
+)
+# Each idea scored on: Interestingness, Feasibility, Novelty (1-10)
+# Composite score = feasibility*0.4 + novelty*0.3 + interestingness*0.3
+```
+
+**Module 2: Automated Peer Review (Phase 4 enhancement)**
+
+Structured review with domain-specific evaluation:
+
+```python
+from data.ai_scientist import PeerReviewer
+
+reviewer = PeerReviewer()
+prompt = reviewer.review_file("results/FULL_REPORT.md", domain="drug_discovery")
+# Returns structured JSON: Summary, Strengths, Weaknesses, Scores (1-4), Overall (1-10), Decision
+# Domains: drug_discovery, genomics, ml, biotech, general
+# Quality gate: overall >= 6 AND decision != "Reject" → PASS
+```
+
+**Module 3: Writeup Generation (Phase 6 enhancement)**
+
+Generate manuscripts from results in multiple formats:
+
+```python
+from data.ai_scientist import WriteupGenerator
+
+writer = WriteupGenerator()
+prompt = writer.build_writeup_from_dir(
+    title="Novel Peptide Inhibitors for SIRT3",
+    results_dir="./results/",
+    format="imrad"  # or "report", "brief", "patent"
+)
+```
+
+**Full Pipeline (convenience):**
+
+```python
+from data.ai_scientist import ARPScientist
+
+sci = ARPScientist()
+pipeline = sci.full_pipeline_prompts(
+    task="Discover ovarian aging therapeutics",
+    results_dir="./ovarian-aging-discovery/results/",
+    domain="drug_discovery",
+    format="imrad"
+)
+# Returns prompts for: brainstorm → execute → review → writeup
+```
+
+**When to use:**
+- Starting new research → IdeaGenerator for structured brainstorming
+- Milestone checkpoint → PeerReviewer as quality gate (replaces ad-hoc review)
+- Final delivery → WriteupGenerator for IMRAD papers, technical reports, or patent drafts
+- Full cycle → ARPScientist.full_pipeline_prompts() orchestrates all three
+
+### Phase 4: Review (Cross-Model + AI Scientist)
+
+At review checkpoints, use both cross-model review AND AI Scientist's structured peer review:
 
 ```
 Review triggers:
@@ -169,16 +244,13 @@ Review triggers:
 - When stuck on a problem
 - Before final delivery
 
-Review prompt → GPT/Codex:
-  "Review this work against the plan. Check:
-   1. Does it meet success criteria?
-   2. Any bugs, edge cases, or design flaws?
-   3. What would you do differently?
-   4. Score 1-10 on completeness and quality."
+Step 1: AI Scientist peer review (structured scores + actionable feedback)
+Step 2: Cross-model review via GPT/Codex (independent sanity check)
+Step 3: Quality gate — both must pass (overall >= 6)
 ```
 
-If review score < 7: address feedback before continuing.
-If review score >= 7: proceed to next phase.
+If review score < 6: address weaknesses and suggestions before continuing.
+If review score >= 6: proceed to next phase.
 
 ### Phase 5: Optimization Loop (autoresearch-style)
 
@@ -194,15 +266,17 @@ LOOP:
   6. Repeat until diminishing returns
 ```
 
-### Phase 6: Delivery
+### Phase 6: Delivery (AI Scientist Writeup)
 
-1. Final cross-model review
-2. Documentation generation
-3. Deployment (if configured)
-4. Summary report to user
+1. AI Scientist peer review (final quality gate)
+2. AI Scientist writeup generation (IMRAD / report / brief / patent)
+3. Documentation generation
+4. Deployment (if configured)
+5. Summary report to user
 
 ## Inspired By
 
 - **[Long-running Claude](https://www.anthropic.com/research/long-running-Claude)** (Anthropic): Persistent memory, test oracle, autonomous sessions
 - **[autoresearch](https://github.com/karpathy/autoresearch)** (Karpathy): Fixed-budget experiments, keep/discard loop, NEVER STOP
 - **[Vibe Physics](https://www.anthropic.com/research/vibe-physics)** (Anthropic): Expert guides AI, 10x acceleration, structured supervision
+- **[AI Scientist](https://github.com/SakanaAI/AI-Scientist)** (SakanaAI): End-to-end research automation, structured idea generation, automated peer review, manuscript generation (Nature 2026)
