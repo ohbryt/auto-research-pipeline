@@ -168,6 +168,29 @@ hf = HFDatasetManager(hf_token="your_token")
 hf.upload_results("./results/", "youruser/project-data")
 ```
 
+## LigandForge Integration (Drug Discovery)
+
+ARP integrates with [LigandForge](https://ligandai.com) for massive-scale peptide drug design:
+
+| Tool | Speed | Method |
+|------|-------|--------|
+| **LigandForge** | **>700 seq/sec** | Discrete diffusion (structure-free) |
+| BoltzGen | ~0.07 seq/sec | Boltzmann generator |
+| BindCraft | ~0.0007 seq/sec | Backbone sampling |
+
+```python
+from data.ligandforge import LigandForgeManager
+lf = LigandForgeManager()
+
+# Suggest pipeline for your targets
+pipeline = lf.suggest_pipeline(["SIRT3", "FSHR", "mTOR"], budget_gpu_hours=1.0)
+
+# Compare with ARP-designed peptides
+lf.compare_with_arp_peptides(my_peptides)
+```
+
+Ref: Watson 2026 — 490,691 peptides across 150 targets, 73% with sub-100nM binders.
+
 ## Project Files
 
 ```

@@ -133,6 +133,31 @@ hf.upload_results("./results/", "myuser/my-research-data")
 - Limited local storage → mount instead of download
 - Reproducibility → reference HF dataset IDs in reports
 
+### LigandForge Integration (Drug Discovery)
+
+For peptide drug discovery pipelines, ARP integrates with LigandForge — a discrete diffusion model generating >700 peptide sequences/sec (10,000x BoltzGen, 1,000,000x BindCraft).
+
+**When to use:**
+- De novo peptide binder design against any receptor target
+- Massive-scale candidate generation (100K+ in minutes)
+- Difficult targets (TNF-α, PD-L1, KRAS — historically "undruggable")
+
+```python
+from data.ligandforge import LigandForgeManager
+lf = LigandForgeManager()
+
+# Estimate throughput
+lf.estimate_throughput(100000, gpu="A100")  # → ~200 sec
+
+# Get paper benchmarks
+lf.get_paper_results("TNF-α")  # → sub-100nM binders found
+
+# Suggest full pipeline for your targets
+lf.suggest_pipeline(["SIRT3", "FSHR", "mTOR"], budget_gpu_hours=1.0)
+```
+
+Ref: Watson 2026, bioRxiv 10.64898/2026.03.14.711748
+
 ### Phase 4: Review (Cross-Model)
 
 At review checkpoints, send work to GPT/Codex for independent assessment:
