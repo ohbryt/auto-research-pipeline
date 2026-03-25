@@ -100,6 +100,39 @@ LOOP until all milestones complete:
 - Use subagents for parallelizable tasks
 - Save raw data/intermediate results
 
+### HuggingFace Dataset Integration (Optional)
+
+ARP can leverage HuggingFace's ecosystem for large-scale data:
+
+**hf-mount (Zero-Download Data Access):**
+```bash
+# Mount any HF dataset as local folder — no download needed
+hf-mount start repo InstaDeepAI/multi_species_genomes /mnt/genomes
+ls /mnt/genomes  # Browse like local files
+```
+
+**Dataset Streaming:**
+```python
+from data.hf_datasets import HFDatasetManager
+hf = HFDatasetManager()
+
+# Stream — processes data without downloading entire dataset
+for batch in hf.stream_dataset("jglaser/binding_affinity"):
+    process(batch)
+```
+
+**Result Upload:**
+```python
+# Save results directly to HuggingFace (skip local SSD)
+hf.upload_results("./results/", "myuser/my-research-data")
+```
+
+**When to use:**
+- Dataset > 1GB → use hf-mount or streaming
+- Need to share results → upload to HF Hub
+- Limited local storage → mount instead of download
+- Reproducibility → reference HF dataset IDs in reports
+
 ### Phase 4: Review (Cross-Model)
 
 At review checkpoints, send work to GPT/Codex for independent assessment:

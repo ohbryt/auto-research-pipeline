@@ -138,6 +138,36 @@ LOOP:
 - Deploy if configured
 - Summary report
 
+## HuggingFace Integration
+
+ARP integrates with HuggingFace for large-scale scientific data:
+
+### Zero-Download Data Access
+```bash
+# Install hf-mount
+curl -fsSL https://raw.githubusercontent.com/huggingface/hf-mount/main/install.sh | sh
+
+# Mount datasets as local folders
+hf-mount start repo jglaser/binding_affinity /tmp/data
+python3 analyze.py --input /tmp/data  # No download needed!
+```
+
+### Curated Scientific Datasets
+| Dataset | Description | Size |
+|---------|-------------|------|
+| InstaDeepAI/multi_species_genomes | Multi-species genome sequences | Large |
+| jglaser/binding_affinity | Protein-ligand binding data | Medium |
+| katielink/clinvar | ClinVar genetic variants | Medium |
+| bloyal/ProteinGLUE | Protein function benchmarks | Medium |
+| financial_phrasebank | Financial news sentiment | Small |
+
+### Upload Results
+```python
+from data.hf_datasets import HFDatasetManager
+hf = HFDatasetManager(hf_token="your_token")
+hf.upload_results("./results/", "youruser/project-data")
+```
+
 ## Project Files
 
 ```
