@@ -110,7 +110,7 @@ class HFDatasetManager:
         """Search HF Hub for datasets"""
         from huggingface_hub import HfApi
         api = HfApi(token=self.token)
-        results = api.list_datasets(search=query, limit=limit, sort="downloads", direction=-1)
+        results = api.list_datasets(search=query, limit=limit, sort="downloads")
         datasets = []
         for ds in results:
             datasets.append({"id": ds.id, "downloads": ds.downloads, "tags": ds.tags[:5] if ds.tags else []})
