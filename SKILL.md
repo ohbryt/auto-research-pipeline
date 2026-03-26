@@ -1,16 +1,69 @@
-# Auto Research Pipeline (ARP)
+# Auto Research Pipeline (ARP) v2
 
-> Autonomous project completion pipeline combining Long-running Claude, Karpathy's autoresearch, and Vibe Physics patterns.
+> Autonomous research & project completion pipeline combining Long-running Claude, Karpathy's autoresearch, Vibe Physics, AI Scientist, and Feynman patterns.
 
 ## Overview
 
-ARP is a Claude Code skill that autonomously completes projects through:
-1. **Interview Phase** — Claude asks 10-20 targeted questions to deeply understand the project
-2. **Planning Phase** — Creates structured plan with success criteria and test oracle
-3. **Execution Phase** — Long-running autonomous work with persistent memory
-4. **Review Phase** — Cross-model review via GPT/Codex for quality gates
+ARP v2 is a Claude Code skill that autonomously completes projects through:
+1. **Interview Phase** — Targeted questions to deeply understand the project
+2. **Planning Phase** — Structured plan with success criteria, task ledger, and verification log
+3. **Execution Phase** — Long-running autonomous work with 4 specialized subagents
+4. **Review Phase** — Multi-layer review (AI Scientist + Feynman Reviewer + cross-model)
 5. **Optimization Loop** — Autoresearch-style keep/discard iterations
-6. **Delivery Phase** — Final verification, documentation, and deployment
+6. **Delivery Phase** — Cited, verified output with provenance tracking
+
+## Subagent System (Feynman-inspired)
+
+ARP v2 uses 4 specialized subagents dispatched via the Agent tool:
+
+| Agent | Role | When to Use |
+|---|---|---|
+| **Researcher** | Gather evidence from papers, web, databases, repos | Wide evidence sweeps, multi-source gathering |
+| **Reviewer** | Adversarial peer review with severity grading | Quality gates, claim verification |
+| **Writer** | Structured drafts from research notes | Manuscript, report, patent generation |
+| **Verifier** | Inline citations, source URL verification, dead link cleanup | Before delivery |
+
+### Scale Decision (auto)
+
+| Query type | Execution |
+|---|---|
+| Single fact or narrow question | Search directly, no subagents, 3-10 tool calls |
+| Direct comparison (2-3 items) | 2 parallel Researcher subagents |
+| Broad survey or multi-faceted topic | 3-4 parallel Researcher subagents |
+| Complex multi-domain research | 4-6 parallel Researcher subagents |
+
+Never spawn subagents for work doable in 5 tool calls.
+
+### Integrity Commandments
+
+All subagents (and the lead agent) MUST follow:
+1. **Never fabricate a source.** Every named tool, project, paper, or dataset must have a verifiable URL.
+2. **Never claim something exists without checking.** Search before citing.
+3. **Never extrapolate details you haven't read.** Don't describe contents you haven't fetched.
+4. **URL or it didn't happen.** No URL = not included in evidence.
+5. **Read before you summarize.** Don't infer paper contents from title alone.
+6. **Mark status honestly.** Distinguish: `verified`, `inferred`, `unverified`, `blocked`.
+
+### File-Based Handoff
+
+Subagents write outputs to files, NOT inline to parent context:
+- Researcher → `<slug>-research-<dimension>.md`
+- Reviewer → `<slug>-review.md`
+- Writer → `<slug>-draft.md`
+- Verifier → `<slug>-verified.md`
+
+Parent reads files after subagent completes. This saves context window.
+
+### Slug-Based Naming
+
+Every workflow derives a short **slug** (lowercase, hyphens, ≤5 words):
+- Plan: `outputs/.plans/<slug>.md`
+- Research: `<slug>-research-*.md`
+- Draft: `outputs/.drafts/<slug>-draft.md`
+- Final: `outputs/<slug>.md` or `papers/<slug>.md`
+- Provenance: `<slug>.provenance.md`
+
+Never use generic names (`research.md`, `draft.md`). Concurrent runs must not collide.
 
 ## Invocation
 
@@ -65,12 +118,25 @@ Based on interview answers, Claude creates:
    - Phase breakdown (milestones)
    - Risk analysis
    - Test oracle definition
+   - **Task Ledger** (Feynman-style):
+     ```
+     | ID | Owner | Task | Status | Output |
+     |---|---|---|---|---|
+     | T1 | lead / researcher | ... | todo | ... |
+     ```
+   - **Verification Log**:
+     ```
+     | Item | Method | Status | Evidence |
+     |---|---|---|---|
+     | Critical claim | source cross-read / rerun | pending | path or URL |
+     ```
+   - **Decision Log** (updated as workflow progresses)
 
-2. **`ARP_CHANGELOG.md`** — Persistent memory file:
-   - Progress log (what's done, what failed, why)
-   - Failed approaches (prevents re-attempting dead ends)
-   - Metrics at checkpoints
-   - Decision rationale
+2. **`ARP_CHANGELOG.md`** — Lab notebook (not release notes):
+   - Read before resuming any substantial work
+   - Append after: meaningful progress, failed approaches, verification results, new blockers
+   - Each entry: active slug/objective + what changed + next recommended step
+   - Mark verification state honestly: `verified`, `unverified`, `blocked`, `inferred`
 
 3. **`ARP_PROGRAM.md`** — Agent instructions:
    - Execution rules
@@ -266,13 +332,47 @@ LOOP:
   6. Repeat until diminishing returns
 ```
 
-### Phase 6: Delivery (AI Scientist Writeup)
+### Phase 6: Delivery (Feynman + AI Scientist)
 
-1. AI Scientist peer review (final quality gate)
-2. AI Scientist writeup generation (IMRAD / report / brief / patent)
-3. Documentation generation
-4. Deployment (if configured)
-5. Summary report to user
+1. **Writer** subagent generates manuscript draft from research files
+2. **Verifier** subagent adds inline citations, verifies every source URL
+3. **Reviewer** subagent runs adversarial verification pass:
+   - FATAL issues → fix before delivery
+   - MAJOR issues → note in Open Questions
+   - MINOR issues → accept
+   - If FATAL found and fixed → run one more verification pass
+4. AI Scientist peer review (structured scores as final quality gate)
+5. **Provenance record** (`<slug>.provenance.md`):
+   ```markdown
+   # Provenance: [topic]
+   - **Date:** [date]
+   - **Rounds:** [number of researcher rounds]
+   - **Sources consulted:** [total]
+   - **Sources accepted:** [survived verification]
+   - **Sources rejected:** [dead links, unverifiable]
+   - **Verification:** [PASS / PASS WITH NOTES]
+   - **Plan:** outputs/.plans/<slug>.md
+   - **Research files:** [list]
+   ```
+6. Final output → `outputs/<slug>.md` or `papers/<slug>.md`
+7. Summary report to user
+
+### Additional Workflows (Feynman-inspired)
+
+**Deep Research** (`/arp deepresearch <topic>`):
+Multi-agent investigation with parallel researchers → synthesis → verification → cited brief
+
+**Literature Review** (`/arp lit <topic>`):
+Paper-first review with consensus/disagreements/open questions + provenance
+
+**Paper Audit** (`/arp audit <paper>`):
+Compare paper claims against public codebase — catch mismatches, missing code, reproduction risks
+
+**Replication** (`/arp replicate <paper>`):
+Plan and execute experiment replication on local/Docker/Modal/RunPod
+
+**Source Comparison** (`/arp compare <items>`):
+Side-by-side comparison matrix with cited evidence
 
 ## Inspired By
 
@@ -280,3 +380,4 @@ LOOP:
 - **[autoresearch](https://github.com/karpathy/autoresearch)** (Karpathy): Fixed-budget experiments, keep/discard loop, NEVER STOP
 - **[Vibe Physics](https://www.anthropic.com/research/vibe-physics)** (Anthropic): Expert guides AI, 10x acceleration, structured supervision
 - **[AI Scientist](https://github.com/SakanaAI/AI-Scientist)** (SakanaAI): End-to-end research automation, structured idea generation, automated peer review, manuscript generation (Nature 2026)
+- **[Feynman](https://github.com/getcompanion-ai/feynman)** (Companion AI): 4-agent research system (Researcher/Reviewer/Writer/Verifier), provenance tracking, integrity commandments, file-based handoff, scale-aware agent dispatch
