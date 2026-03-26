@@ -318,7 +318,7 @@ Step 3: Quality gate — both must pass (overall >= 6)
 If review score < 6: address weaknesses and suggestions before continuing.
 If review score >= 6: proceed to next phase.
 
-### Phase 5: Optimization Loop (autoresearch-style)
+### Phase 5: Optimization Loop (autoresearch + Memento self-evolution)
 
 For optimizable components (ML models, algorithms, UI, performance):
 
@@ -329,8 +329,43 @@ LOOP:
   3. If improved → KEEP (git commit, advance)
   4. If equal/worse → DISCARD (git reset)
   5. Log result in ARP_CHANGELOG.md
-  6. Repeat until diminishing returns
+  6. Reflect → continue / replan / finalize (Memento)
+  7. Track approach utility score (Memento)
+  8. If approach utility < 0.2 after 3 attempts → DEPRECATE, try different strategy
+  9. Repeat until diminishing returns
 ```
+
+### Self-Evolution (Memento-inspired)
+
+ARP v2 learns from its own failures via a Read → Execute → Reflect → Write loop:
+
+**Reflection after each milestone:**
+```python
+from data.memento_evolution import ARPEvolution
+
+evo = ARPEvolution("otub2-activator")
+result = evo.post_milestone(
+    milestone="M3: Allosteric screening",
+    outcome="0 hits above threshold",
+    success=False,
+    approach="virtual_screening_zinc",
+    remaining=["M4", "M5", "M6"]
+)
+# → decision: "replan", reason: "Low utility (0.15), try fragment screening instead"
+```
+
+**Approach utility tracking:**
+- Every approach gets a utility score (0-1) based on success/failure history
+- Consistently failing approaches (utility < 0.2, ≥3 attempts) are **deprecated**
+- System suggests rewrites: broader search, different binding site, alternative method
+- `evo.get_best_approach(["zinc_screen", "enamine_fragments", "chembl_repurposing"])` picks highest-utility option
+
+**Self-rewrite suggestions:**
+- When an approach fails, the system analyzes failure patterns and suggests specific fixes
+- "No hits" → expand search space / relax thresholds
+- "Timeout" → reduce computation / pre-filter
+- "False positives" → add counter-screens
+- "Weak binding" → try different site / covalent strategy
 
 ### Phase 6: Delivery (Feynman + AI Scientist)
 
@@ -381,3 +416,4 @@ Side-by-side comparison matrix with cited evidence
 - **[Vibe Physics](https://www.anthropic.com/research/vibe-physics)** (Anthropic): Expert guides AI, 10x acceleration, structured supervision
 - **[AI Scientist](https://github.com/SakanaAI/AI-Scientist)** (SakanaAI): End-to-end research automation, structured idea generation, automated peer review, manuscript generation (Nature 2026)
 - **[Feynman](https://github.com/getcompanion-ai/feynman)** (Companion AI): 4-agent research system (Researcher/Reviewer/Writer/Verifier), provenance tracking, integrity commandments, file-based handoff, scale-aware agent dispatch
+- **[Memento-Skills](https://github.com/Memento-Teams/Memento-Skills)** (Memento Teams): Self-evolving skill system, Read-Execute-Reflect-Write loop, utility scoring, approach deprecation, failure-driven rewriting
