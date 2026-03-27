@@ -417,3 +417,38 @@ Side-by-side comparison matrix with cited evidence
 - **[AI Scientist](https://github.com/SakanaAI/AI-Scientist)** (SakanaAI): End-to-end research automation, structured idea generation, automated peer review, manuscript generation (Nature 2026)
 - **[Feynman](https://github.com/getcompanion-ai/feynman)** (Companion AI): 4-agent research system (Researcher/Reviewer/Writer/Verifier), provenance tracking, integrity commandments, file-based handoff, scale-aware agent dispatch
 - **[Memento-Skills](https://github.com/Memento-Teams/Memento-Skills)** (Memento Teams): Self-evolving skill system, Read-Execute-Reflect-Write loop, utility scoring, approach deprecation, failure-driven rewriting
+
+### NotebookLM Bridge (Token-Saving Literature Review)
+
+For large-scale literature reviews, ARP v2 bridges with Google NotebookLM to save tokens:
+
+**Problem:** Reading 100+ papers directly in Claude costs $50-200 in tokens.
+**Solution:** Documents stay in NotebookLM (free, 300 docs, no hallucination). Claude only generates questions and synthesizes answers.
+
+```python
+from data.notebooklm_bridge import NotebookLMBridge
+
+bridge = NotebookLMBridge(slug="otub2-literature")
+
+# Step 1: Generate targeted research questions
+questions = bridge.generate_questions(
+    topic="OTUB2 role in hepatic steatosis",
+    target="OTUB2",
+    disease="MASLD",
+    depth="comprehensive"  # quick(8), standard(20), comprehensive(35)
+)
+
+# Step 2: Save questions as markdown
+bridge.save_questions()  # → outputs/.notebooklm/otub2-literature-questions.md
+
+# Step 3: User queries NotebookLM with these questions (free, grounded)
+# Step 4: Save answers back
+bridge.save_answers("answers.md", answers_text)
+
+# Step 5: Claude synthesizes (cheap — structured input only)
+prompt = bridge.build_synthesis_prompt("OTUB2 in MASLD")
+```
+
+**Domains:** drug_discovery, genomics, general
+**Question categories:** mechanism, clinical, therapeutic, structural, preclinical
+**Cost:** ~$2-5 total (vs $50-200 direct reading)
